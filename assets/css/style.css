@@ -21,7 +21,7 @@ nav a:hover{color:#fff}
 .mb{margin-bottom:12px}
 
 .input{background:#0b1220;border:1px solid #334155;color:#e5e7eb;padding:10px;border-radius:10px;outline:none}
-.input::placeholder{color:#94a3b8}
+.input::placeholder{color:#728db1}
 .btn{background:#22d3ee;border:none;color:#0f172a;padding:10px 14px;border-radius:10px;cursor:pointer;font-weight:700}
 .btn:hover{filter:brightness(1.05)}
 .btn.ghost{background:transparent;border:1px solid #334155;color:#e5e7eb}
