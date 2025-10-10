@@ -75,13 +75,13 @@ $rows = q($conn, "SELECT * FROM products ORDER BY id DESC");
 
   <?php else: ?>
     <!-- 7) Lege-staat bericht als er (nog) geen producten zijn -->
-    <p>Er zijn nog geen producten gevonden.</p>
+    <p>Er zijn nog helaas geen producten gevonden.</p>
   <?php endif; ?>
 
   <!-- 8) Snelle admin-acties (navigatie terug en uitloggen) -->
   <ul class="admin-actions" style="margin-top:1rem; list-style:none; padding-left:0;">
     <li style="display:inline-block; margin-right:1rem;">
-      <a href="?page=home">← Terug naar producten</a>
+      <a href="?page=home">← Terug naar de producten</a>
     </li>
     <li style="display:inline-block;">
       <a href="?page=logout">Logout</a>
