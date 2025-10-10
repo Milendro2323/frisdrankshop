@@ -1,0 +1,2 @@
+function inc(id){var el=document.getElementById(id); if(!el) return; el.value = (+el.value||0)+1;}
+function dec(id){var el=document.getElementById(id); if(!el) return; el.value = Math.max(0,(+el.value||0)-1);}
