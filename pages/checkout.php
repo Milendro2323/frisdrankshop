@@ -34,42 +34,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
     } elseif (!$items) {
         $error = "Je mand is leeg.";
     } else {
-        // Velden lezen + simpele validatie
-        $name  = trim($_POST['name']  ?? '');
-        $email = trim($_POST['email'] ?? '');
-        $addr  = trim($_POST['address'] ?? '');
-        $zip   = trim($_POST['postal_code'] ?? '');
-        $city  = trim($_POST['city'] ?? '');
-        if ($name==='' || $email==='' || !filter_var($email, FILTER_VALIDATE_EMAIL) || $addr==='' || $zip==='' || $city==='') {
+        // Lees velden
+        $first_name = trim($_POST['first_name'] ?? '');
+        $last_name  = trim($_POST['last_name']  ?? '');
+        $email      = trim($_POST['email']      ?? '');
+        $addr       = trim($_POST['address']    ?? '');
+        $zip        = trim($_POST['postal_code']?? '');
+        $city       = trim($_POST['city']       ?? '');
+        $country    = trim($_POST['country']    ?? 'Nederland');
+
+        // Validatie
+        if ($first_name==='' || $last_name==='' || $email==='' || !filter_var($email, FILTER_VALIDATE_EMAIL)
+            || $addr==='' || $zip==='' || $city==='') {
             $error = "Vul alle velden correct in.";
         } else {
             // Transactie: order + items + voorraad
             $conn->begin_transaction();
             try {
                 // Order opslaan
-                q($conn,
-                  "INSERT INTO orders (customer_name,email,address,postal_code,city,total,created_at)
-                   VALUES (?,?,?,?,?,?,NOW())",
-                  [$name,$email,$addr,$zip,$city,$total]
+                q(
+                    $conn,
+                    "INSERT INTO orders (first_name,last_name,email,address,postal_code,city,country,total,created_at)
+                     VALUES (?,?,?,?,?,?,?,?,NOW())",
+                    [$first_name,$last_name,$email,$addr,$zip,$city,$country,$total]
                 );
                 $order_id = $conn->insert_id;
 
-                // Items opslaan + voorraad verlagen
+                // Items opslaan + voorraad bijwerken
                 foreach ($items as $it) {
-                    q($conn,
-                      "INSERT INTO order_items (order_id,product_id,name,unit_price,qty,line_total)
-                       VALUES (?,?,?,?,?,?)",
-                      [$order_id,$it['id'],$it['name'],(float)$it['price'],$it['qty'],$it['line_total']]
+                    q(
+                        $conn,
+                        "INSERT INTO order_items (order_id,product_id,quantity,unit_price)
+                         VALUES (?,?,?,?)",
+                        [$order_id,$it['id'],$it['qty'],(float)$it['price']]
                     );
-                    q($conn,
-                      "UPDATE products SET stock = GREATEST(stock - ?, 0) WHERE id = ?",
-                      [$it['qty'],$it['id']]
+                    q(
+                        $conn,
+                        "UPDATE products SET stock = GREATEST(stock - ?, 0) WHERE id = ?",
+                        [$it['qty'],$it['id']]
                     );
                 }
 
                 $conn->commit();
-                $_SESSION['cart'] = [];    // mand leeg
-                $success = "Bedankt! Je bestelling (#{$order_id}) is geplaatst.";
+                $_SESSION['cart'] = [];
+                $success = "Bedankt voor je bestelling.";
             } catch (Throwable $e) {
                 $conn->rollback();
                 $error = "Er ging iets mis bij het afronden.";
@@ -82,7 +90,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
 <h2 class="title">Afrekenen</h2>
 
 <?php if ($success): ?>
-  <!-- Bevestiging -->
   <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
   <p>Je ontvangt een bevestiging op e-mail: <?= htmlspecialchars($_POST['email'] ?? '') ?>.</p>
   <p><a class="btn" href="?page=home">Verder winkelen</a></p>
@@ -94,7 +101,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
   <?php endif; ?>
 
   <?php if (!$items): ?>
-    <!-- Geen items -->
     <p class="muted">Je mand is leeg.</p>
     <p><a class="btn" href="?page=home">Terug naar producten</a></p>
 
@@ -121,10 +127,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
       <input type="hidden" name="action" value="place">
       <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf']) ?>">
 
-      <!-- Korte labels/inputs; required voor basisvalidatie in browser -->
-      <label>Naam
-        <input class="input" type="text" name="name" required value="<?= htmlspecialchars($_POST['name'] ?? '') ?>">
-      </label>
+      <div class="row">
+        <label style="flex:1">Voornaam
+          <input class="input" type="text" name="first_name" required value="<?= htmlspecialchars($_POST['first_name'] ?? '') ?>">
+        </label>
+        <label style="flex:1">Achternaam
+          <input class="input" type="text" name="last_name" required value="<?= htmlspecialchars($_POST['last_name'] ?? '') ?>">
+        </label>
+      </div>
+
       <label>E-mail
         <input class="input" type="email" name="email" required value="<?= htmlspecialchars($_POST['email'] ?? '') ?>">
       </label>
@@ -139,6 +150,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
           <input class="input" type="text" name="city" required value="<?= htmlspecialchars($_POST['city'] ?? '') ?>">
         </label>
       </div>
+      <label>Land
+        <input class="input" type="text" name="country" required value="<?= htmlspecialchars($_POST['country'] ?? '') ?>">
+      </label>
 
       <div class="row mt">
         <a class="btn ghost" href="?page=cart">← Terug naar mand</a>
@@ -148,3 +162,4 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
   <?php endif; ?>
 
 <?php endif; ?>
+
