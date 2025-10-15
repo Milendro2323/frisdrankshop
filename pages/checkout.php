@@ -2,19 +2,25 @@
 // checkout.php
 
 // Vereist: session_start(), $conn (mysqli), q() helper met prepared statements
+
 if (!isset($_SESSION['cart'])) $_SESSION['cart'] = [];
 
-// CSRF-token (eenvoudig)
-if (empty($_SESSION['csrf'])) { $_SESSION['csrf'] = bin2hex(random_bytes(16)); }
+// Eenvoudig CSRF-token (tegen vervalste formulieren)
+if (empty($_SESSION['csrf'])) {
+    $_SESSION['csrf'] = bin2hex(random_bytes(16));
+}
 
-// Mand ophalen
+// Mand ophalen en totaal berekenen
 $ids    = array_keys($_SESSION['cart']);
 $items  = [];
 $total  = 0.0;
 
 if ($ids) {
+    // IN-lijst bouwen met placeholders, veilig via prepared statement
     $in  = implode(',', array_fill(0, count($ids), '?'));
     $res = q($conn, "SELECT id,name,price,image FROM products WHERE id IN ($in)", $ids);
+
+    // Voor elk product: aantal en regeltotaal bepalen
     while ($r = $res->fetch_assoc()) {
         $qty = (int)($_SESSION['cart'][$r['id']] ?? 0);
         if ($qty <= 0) continue;
@@ -27,14 +33,15 @@ if ($ids) {
 
 // Afhandelen “Bestelling plaatsen”
 $success = null; $error = null; $order_id = null;
+
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place') {
-    // Basis checks: CSRF + niet lege mand
+    // 1) Basis checks: CSRF en niet-lege mand
     if (!hash_equals($_SESSION['csrf'] ?? '', $_POST['csrf'] ?? '')) {
         $error = "Beveiligingsfout. Probeer opnieuw.";
     } elseif (!$items) {
         $error = "Je mand is leeg.";
     } else {
-        // Lees velden
+        // 2) Velden lezen en simpel valideren
         $first_name = trim($_POST['first_name'] ?? '');
         $last_name  = trim($_POST['last_name']  ?? '');
         $email      = trim($_POST['email']      ?? '');
@@ -43,12 +50,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
         $city       = trim($_POST['city']       ?? '');
         $country    = trim($_POST['country']    ?? 'Nederland');
 
-        // Validatie
+        // Vereiste velden + geldig e-mailadres
         if ($first_name==='' || $last_name==='' || $email==='' || !filter_var($email, FILTER_VALIDATE_EMAIL)
             || $addr==='' || $zip==='' || $city==='') {
             $error = "Vul alle velden correct in.";
         } else {
-            // Transactie: order + items + voorraad
+            // 3) Transactie: order + items + voorraad (alles of niets)
             $conn->begin_transaction();
             try {
                 // Order opslaan
@@ -60,14 +67,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
                 );
                 $order_id = $conn->insert_id;
 
-                // Items opslaan + voorraad bijwerken
+                // Orderregels opslaan en voorraad bijwerken
                 foreach ($items as $it) {
+                    // Eén rij per besteld product
                     q(
                         $conn,
                         "INSERT INTO order_items (order_id,product_id,quantity,unit_price)
                          VALUES (?,?,?,?)",
                         [$order_id,$it['id'],$it['qty'],(float)$it['price']]
                     );
+                    // Voorraad verminderen, maar nooit onder 0
                     q(
                         $conn,
                         "UPDATE products SET stock = GREATEST(stock - ?, 0) WHERE id = ?",
@@ -75,10 +84,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
                     );
                 }
 
+                // Alles gelukt: vastleggen, mand leegmaken, melding tonen
                 $conn->commit();
                 $_SESSION['cart'] = [];
                 $success = "Bedankt voor je bestelling.";
             } catch (Throwable $e) {
+                // Fout: alles terugdraaien en foutmelding tonen
                 $conn->rollback();
                 $error = "Er ging iets mis bij het afronden.";
             }
@@ -90,22 +101,25 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
 <h2 class="title">Afrekenen</h2>
 
 <?php if ($success): ?>
+  <!-- Succesmelding en knop om verder te winkelen -->
   <div class="alert alert-success"><?= htmlspecialchars($success) ?></div>
-  <p>Je ontvangt een bevestiging op e-mail: <?= htmlspecialchars($_POST['email'] ?? '') ?>.</p>
+  <br>
   <p><a class="btn" href="?page=home">Verder winkelen</a></p>
 
 <?php else: ?>
 
   <?php if ($error): ?>
+    <!-- Foutmelding bij validatie/CSRF/DB-fout -->
     <div class="alert alert-error"><?= htmlspecialchars($error) ?></div>
   <?php endif; ?>
 
   <?php if (!$items): ?>
+    <!-- Lege mand -->
     <p class="muted">Je mand is leeg.</p>
     <p><a class="btn" href="?page=home">Terug naar producten</a></p>
 
   <?php else: ?>
-    <!-- Samenvatting bestelling -->
+    <!-- Samenvatting van de bestelling -->
     <div class="cart">
       <?php foreach ($items as $it): ?>
         <div class="cart-row">
@@ -121,9 +135,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
     </div>
     <div class="total">Totaal: <strong>€<?= number_format((float)$total,2,",",".") ?></strong></div>
 
-    <!-- Afrekenformulier: klantgegevens -->
+    <!-- Afrekenformulier met vereiste klantgegevens -->
     <h3 class="mt">Gegevens</h3>
     <form method="post" class="form">
+      <!-- Actie + CSRF-token verplicht meesturen -->
       <input type="hidden" name="action" value="place">
       <input type="hidden" name="csrf" value="<?= htmlspecialchars($_SESSION['csrf']) ?>">
 
@@ -155,6 +170,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'place
       </label>
 
       <div class="row mt">
+        <!-- Terugknop naar mand + verzendknop -->
         <a class="btn ghost" href="?page=cart">← Terug naar mand</a>
         <button class="btn">Bestelling afronden</button>
       </div>
