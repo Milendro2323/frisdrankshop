@@ -59,7 +59,7 @@ if (!in_array($page, $allowed)) { $page = 'home'; }
 </main>
 
 <!-- Footer met jaartal/credit -->
-<footer class="ftr"><div class="wrap">© Frisdrankshop Milendro 2025</div></footer>
+<footer class="ftr"><div class="wrab">© Frisdrankshop Milendro 2025</div></footer>
 
 <!-- Optionele JS (bijv. qty +/-, info-panel) -->
 <script src="assets/script.js"></script>

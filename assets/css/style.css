@@ -47,7 +47,8 @@ nav a:hover{color:#fff}
 .panel__inner{padding:12px}
 .panel__close{float:right;background:transparent;border:1px solid #334155;color:#e5e7eb;border-radius:8px;padding:4px 8px;cursor:pointer}
 
-.ftr{border-top:1px solid #1f2937;margin-top:24px}
+.ftr{border-top:1px solid #1f2937;margin-top:24px; text-align: center;
+  padding: 12px 0; }
 .ftr .wrap{padding:20px 16px;color:#94a3b8}
 
 .err{background:#7f1d1d;color:#fecaca;border:1px solid #ef4444;padding:10px;border-radius:10px}
