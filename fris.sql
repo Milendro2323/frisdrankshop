@@ -22,6 +22,7 @@ CREATE TABLE users (
 
 CREATE TABLE orders (
   id INT AUTO_INCREMENT PRIMARY KEY,
+  user_id INT,
   first_name  VARCHAR(100),
   last_name   VARCHAR(100),
   email       VARCHAR(200),
@@ -30,7 +31,8 @@ CREATE TABLE orders (
   city        VARCHAR(100),
   country     VARCHAR(100),
   total       DECIMAL(10,2),
-  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+  FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
 );
 
 CREATE TABLE order_items (
@@ -59,3 +61,8 @@ INSERT INTO products (name,brand,price,flavor,image,stock) VALUES
 -- admin met wachtwoord 'admin123'
 INSERT INTO users (email,password_hash,role) VALUES
 ('admin@shop.local', '$2y$10$JtdVLWEzqZ2H9M6nJ2d6VOMtV1sHTmP8tS9UQJ7l3G2x3QPGfH0t2', 'admin');
+
+-- twee klanten: wachtwoord voor beiden is 'klant123'
+INSERT INTO users (email,password_hash,role) VALUES
+('jan@example.com', '$2y$10$Zx.8qxR5KzIQV8Jx7NkYOuDqX5KvN0m4Qr8Fp5Xt2W6Yz1Abc3def', 'customer'),
+('lisa@example.com', '$2y$10$Zx.8qxR5KzIQV8Jx7NkYOuDqX5KvN0m4Qr8Fp5Xt2W6Yz1Abc3def', 'customer');
