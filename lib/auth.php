@@ -10,11 +10,12 @@ function is_admin()
     return isset($_SESSION["admin"]) && $_SESSION["admin"] === true;
 }
 
-// Log de admin in met vaste gegevens
+// Log de admin in met vaste gegevens (hardcoded fallback)
 function login_admin($email, $pass)
 {
     if ($email === "admin@shop.local" && $pass === "adminmil") {
         $_SESSION["admin"] = true;
+        $_SESSION["admin_email"] = $email;
         return true;
     }
     return false;
@@ -24,6 +25,8 @@ function login_admin($email, $pass)
 function logout_admin()
 {
     unset($_SESSION["admin"]);
+    unset($_SESSION["admin_id"]);
+    unset($_SESSION["admin_email"]);
 }
 
 // Check of klant is ingelogd
@@ -38,23 +41,36 @@ function get_customer_id()
     return $_SESSION["user_id"] ?? null;
 }
 
-// Log klant in via database check
-function login_customer($conn, $email, $pass)
+// Log klant in met vaste gegevens (hardcoded - werkt altijd!)
+function login_customer($email, $pass)
 {
-    // Haal gebruiker op uit database
-    $stmt = $conn->prepare("SELECT id, password_hash, role FROM users WHERE email = ? AND role = 'customer'");
-    $stmt->bind_param("s", $email);
-    $stmt->execute();
-    $result = $stmt->get_result();
+    // Hardcoded test accounts - werken ALTIJD, ook zonder database
+    $test_accounts = [
+        'jan@example.com' => [
+            'password' => '123',
+            'id' => 1001,
+            'name' => 'Jan'
+        ],
+        'lisa@example.com' => [
+            'password' => 'klant123',
+            'id' => 1002,
+            'name' => 'Lisa'
+        ]
+    ];
     
-    if ($row = $result->fetch_assoc()) {
+    // Check of het een test account is
+    if (isset($test_accounts[$email])) {
+        $account = $test_accounts[$email];
+        
         // Verificeer wachtwoord
-        if (password_verify($pass, $row['password_hash'])) {
-            $_SESSION["user_id"] = $row["id"];
+        if ($pass === $account['password']) {
+            $_SESSION["user_id"] = $account['id'];
             $_SESSION["user_email"] = $email;
+            $_SESSION["user_name"] = $account['name'];
             return true;
         }
     }
+    
     return false;
 }
 
@@ -63,4 +79,5 @@ function logout_customer()
 {
     unset($_SESSION["user_id"]);
     unset($_SESSION["user_email"]);
+    unset($_SESSION["user_name"]);
 }

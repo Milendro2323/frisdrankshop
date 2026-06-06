@@ -6,7 +6,7 @@ if (!isset($_SESSION['cart'])) $_SESSION['cart'] = [];
 if ($_SERVER['REQUEST_METHOD']==='POST') {
     $action = $_POST['action'] ?? '';
     $id  = (int)($_POST['id'] ?? 0);
-
+     
     // Toevoegen: qty min. 1, daarna redirect (PRG-patroon)
     if ($action==='add' && $id>0) {
         $qty = max(1, (int)($_POST['qty'] ?? 1));

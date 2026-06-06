@@ -56,6 +56,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
   </div>
 
   <div style="margin-top:1rem;">
+    <li style="display:inline-block;">
+      <a href="?page=logout">Logout</a>
+    </li>
     <a href="?page=home">← Terug naar shop</a>
   </div>
 </div>
