@@ -118,7 +118,7 @@ color: black;
 </style>
 
 <div class="checkout-box">
-<h2>Afrekenen</h2>
+<h2 style="color: black;">Afrekenen</h2>
 
 <?php if($success): ?>
 <script>
