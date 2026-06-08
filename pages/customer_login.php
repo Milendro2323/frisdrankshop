@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email = $_POST['email'] ?? '';
     $pass  = $_POST['password'] ?? '';
 
-    if (login_customer($conn, $email, $pass)) {
+    if (login_customer($email, $pass)) {
         // Success: doorsturen naar checkout of home
         $redirect = $_GET['redirect'] ?? 'home';
         header("Location: ?page=" . urlencode($redirect));

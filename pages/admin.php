@@ -3,6 +3,7 @@
 require_once __DIR__ . '/../lib/db.php';
 require_once __DIR__ . '/../lib/auth.php';
 
+// Controle: alleen admins hebben toegang
 if (!is_admin()) {
     header("Location: ?page=login");
     exit;
@@ -42,17 +43,19 @@ $tab = $_GET['tab'] ?? 'products';
           <th>Merk</th>
           <th>Voorraad</th>
         </tr>
-
+          // Door alle producten heen lopen
         <?php while ($r = $rows->fetch_assoc()): ?>
           <tr>
-            <td><?php echo (int)$r['id']; ?></td>
-            <td><?php echo htmlspecialchars($r['name'] ?? ''); ?></td>
+            <td><?php echo (int)$r['id']; ?></td><!-- Product ID -->
+            <td><?php echo htmlspecialchars($r['name'] ?? ''); ?></td><!-- Productnaam veilig weergeven -->
+            <!-- Prijs formatteren naar euro-notatie -->
             <td>€<?php
               $price = isset($r['price']) ? (float)$r['price'] : 0;
               echo number_format($price, 2, ',', '.');
-            ?></td>
+            ?></td> 
+            <!-- Merk weergeven -->
             <td><?php echo htmlspecialchars($r['brand'] ?? ''); ?></td>
-            <td><?php echo (int)$r['stock']; ?></td>
+            <td><?php echo (int)$r['stock']; ?></td> <!-- Voorraad tonen -->
           </tr>
         <?php endwhile; ?>
       </table>
@@ -85,29 +88,34 @@ $tab = $_GET['tab'] ?? 'products';
           <th>Details</th>
         </tr>
 
-        <?php while ($o = $orders->fetch_assoc()): ?>
-          <tr>
-            <td>#<?= (int)$o['id'] ?></td>
-            <td><?= htmlspecialchars($o['first_name'].' '.$o['last_name']) ?></td>
-            <td>
-              <?= htmlspecialchars($o['email']) ?>
-              <?php if ($o['user_email']): ?>
-                <br><small class="muted">(Account: <?= htmlspecialchars($o['user_email']) ?>)</small>
-              <?php endif; ?>
-            </td>
-            <td>€<?= number_format((float)$o['total'], 2, ',', '.') ?></td>
-            <td><?= date('d-m-Y H:i', strtotime($o['created_at'])) ?></td>
-            <td>
-              <button 
-                class="btn ghost" 
-                onclick="showOrderDetails(<?= (int)$o['id'] ?>)"
-                style="padding:0.25rem 0.5rem; font-size:0.9em;">
-                Bekijk
-              </button>
-            </td>
-          </tr>
-        <?php endwhile; ?>
-      </table>
+        <?php while ($o = $orders->fetch_assoc()): ?> <!-- Door alle bestellingen heen lopen -->
+  <tr>
+    <td>#<?= (int)$o['id'] ?></td> <!-- Bestelnummer tonen -->
+    <td><?= htmlspecialchars($o['first_name'].' '.$o['last_name']) ?></td> <!-- Naam van klant tonen -->
+    <td>
+      <?= htmlspecialchars($o['email']) ?> <!-- E-mailadres tonen -->
+
+      <?php if ($o['user_email']): ?> <!-- Controleren of klant een account heeft -->
+        <br>
+        <small class="muted">
+          (Account: <?= htmlspecialchars($o['user_email']) ?>)
+        </small> <!-- Account e-mail tonen -->
+      <?php endif; ?>
+    </td>
+
+    <td>€<?= number_format((float)$o['total'], 2, ',', '.') ?></td> <!-- Totaalbedrag formatteren -->
+    <td><?= date('d-m-Y H:i', strtotime($o['created_at'])) ?></td> <!-- Datum en tijd formatteren -->
+    <td>
+      <button
+        class="btn ghost"
+        onclick="showOrderDetails(<?= (int)$o['id'] ?>)"; 
+        style="padding:0.25rem 0.5rem; font-size:0.9em;">
+        Bekijk
+      </button>
+    </td>
+  </tr>
+<?php endwhile; ?> <!-- Einde van de bestellingen-lus -->
+</table> 
 
     <?php else: ?>
       <p class="muted">Er zijn nog geen bestellingen geplaatst.</p>
@@ -134,56 +142,65 @@ $tab = $_GET['tab'] ?? 'products';
 </div>
 
 <script>
-function showOrderDetails(orderId) {
-  document.getElementById('orderModal').style.display = 'block';
-  document.getElementById('orderDetails').innerHTML = 'Laden...';
-  
-  // Haal order details op via fetch
-  fetch('?page=admin&action=get_order_details&order_id=' + orderId)
-    .then(r => r.json())
+function showOrderDetails(orderId) { // Orderdetails openen
+
+  document.getElementById('orderModal').style.display = 'block'; // Modal tonen
+  document.getElementById('orderDetails').innerHTML = 'Laden...'; // Laadbericht tonen
+
+  fetch('?page=admin&action=get_order_details&order_id=' + orderId) // Ordergegevens ophalen
+    .then(r => r.json()) // JSON verwerken
     .then(data => {
-      let html = '<h3>Bestelling #' + data.order.id + '</h3>';
-      html += '<p><strong>Klant:</strong> ' + data.order.first_name + ' ' + data.order.last_name + '</p>';
-      html += '<p><strong>Email:</strong> ' + data.order.email + '</p>';
-      html += '<p><strong>Adres:</strong> ' + data.order.address + ', ' + data.order.postal_code + ' ' + data.order.city + '</p>';
-      html += '<p><strong>Datum:</strong> ' + data.order.created_at + '</p>';
-      html += '<h4>Producten:</h4>';
-      html += '<table class="table" style="width:100%;">';
-      html += '<tr><th>Product</th><th>Aantal</th><th>Prijs</th><th>Totaal</th></tr>';
-      
-      data.items.forEach(item => {
-        html += '<tr>';
-        html += '<td>' + item.name + '</td>';
-        html += '<td>' + item.quantity + '</td>';
-        html += '<td>€' + item.unit_price + '</td>';
-        html += '<td>€' + item.line_total + '</td>';
-        html += '</tr>';
+
+      let html = '<h3>Bestelling #' + data.order.id + '</h3>'; // Bestelnummer tonen
+      html += '<p><strong>Klant:</strong> ' + data.order.first_name + ' ' + data.order.last_name + '</p>'; // Klantnaam tonen
+      html += '<p><strong>Email:</strong> ' + data.order.email + '</p>'; // E-mailadres tonen
+      html += '<p><strong>Adres:</strong> ' + data.order.address + ', ' + data.order.postal_code + ' ' + data.order.city + '</p>'; // Adres tonen
+      html += '<p><strong>Datum:</strong> ' + data.order.created_at + '</p>'; // Besteldatum tonen
+
+      html += '<h4>Producten:</h4>'; // Koptekst producten
+      html += '<table class="table" style="width:100%;">'; // Producttabel starten
+      html += '<tr><th>Product</th><th>Aantal</th><th>Prijs</th><th>Totaal</th></tr>'; // Tabelkop maken
+
+      data.items.forEach(item => { // Door alle producten lopen
+
+        html += '<tr>'; // Nieuwe rij starten
+        html += '<td>' + item.name + '</td>'; // Productnaam tonen
+        html += '<td>' + item.quantity + '</td>'; // Aantal tonen
+        html += '<td>€' + item.unit_price + '</td>'; // Prijs tonen
+        html += '<td>€' + item.line_total + '</td>'; // Regeltotaal tonen
+        html += '</tr>'; // Rij afsluiten
+
       });
-      
-      html += '</table>';
-      html += '<p style="text-align:right; margin-top:1rem;"><strong>Totaal: €' + data.order.total + '</strong></p>';
-      
-      document.getElementById('orderDetails').innerHTML = html;
+      html += '</table>'; // Tabel afsluiten
+      html += '<p style="text-align:right; margin-top:1rem;"><strong>Totaal: €' + data.order.total + '</strong></p>'; // Eindtotaal tonen
+
+      document.getElementById('orderDetails').innerHTML = html; // HTML in modal plaatsen
+
     })
-    .catch(err => {
-      document.getElementById('orderDetails').innerHTML = 'Fout bij laden van details.';
+    .catch(err => { // Fout afhandelen
+
+      document.getElementById('orderDetails').innerHTML =
+      'Fout bij laden van details.'; // Foutmelding tonen
+
     });
 }
 
-function closeOrderModal() {
-  document.getElementById('orderModal').style.display = 'none';
+function closeOrderModal() { // Modal sluiten
+
+  document.getElementById('orderModal').style.display = 'none'; // Modal verbergen
+
 }
 </script>
 
 <?php
-// API endpoint voor order details (via AJAX)
+// API endpoint voor order details ophalen (via AJAX)
 if (isset($_GET['action']) && $_GET['action'] === 'get_order_details' && is_admin()) {
-    $order_id = (int)($_GET['order_id'] ?? 0);
+    $order_id = (int)($_GET['order_id'] ?? 0);   // Order-ID ophalen
     
-    // Haal order op
+    // Database: bestelling ophalen Haal order op
     $order = q($conn, "SELECT * FROM orders WHERE id = ?", [$order_id])->fetch_assoc();
     
-    // Haal order items op met product info
+    // Database: Haalt orderregels  order items op met product info
     $items_res = q($conn, "
       SELECT oi.*, p.name 
       FROM order_items oi
@@ -191,15 +208,15 @@ if (isset($_GET['action']) && $_GET['action'] === 'get_order_details' && is_admi
       WHERE oi.order_id = ?
     ", [$order_id]);
     
-    $items = [];
+    $items = [];// Resultaten verwerken
     while ($item = $items_res->fetch_assoc()) {
-        $item['unit_price'] = number_format((float)$item['unit_price'], 2, ',', '.');
-        $item['line_total'] = number_format((float)$item['quantity'] * (float)$item['unit_price'], 2, ',', '.');
+        $item['unit_price'] = number_format((float)$item['unit_price'], 2, ',', '.');// Prijzen formatteren
+        $item['line_total'] = number_format((float)$item['quantity'] * (float)$item['unit_price'], 2, ',', '.'); // Regel totaal berekenen
         $items[] = $item;
     }
     
     $order['total'] = number_format((float)$order['total'], 2, ',', '.');
-    
+    // JSON response terugsturen
     header('Content-Type: application/json');
     echo json_encode(['order' => $order, 'items' => $items]);
     exit;
