@@ -222,7 +222,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             <div class="row mt">
                 <a class="btn ghost" href="?page=cart">← Terug naar mand</a>
-                <button class="btn" type="submit">Bestelling afronden</button>
+                <button class="btn">Bestelling afronden</button>
             </div>
         </form>
 

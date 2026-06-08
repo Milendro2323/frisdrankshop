@@ -43,7 +43,7 @@ $tab = $_GET['tab'] ?? 'products';
           <th>Merk</th>
           <th>Voorraad</th>
         </tr>
-          // Door alle producten heen lopen
+          <!--Door alle producten heen lopen-->
         <?php while ($r = $rows->fetch_assoc()): ?>
           <tr>
             <td><?php echo (int)$r['id']; ?></td><!-- Product ID -->
